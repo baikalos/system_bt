@@ -40,7 +40,7 @@
 #include "osi/include/osi.h"
 #include "osi/include/properties.h"
 
-#define A2DP_SBC_MAX_BITPOOL 112
+#define A2DP_SBC_MAX_BITPOOL 76
 
 /* data type for the SBC Codec Information Element */
 typedef struct {

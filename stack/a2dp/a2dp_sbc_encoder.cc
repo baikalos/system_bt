@@ -31,6 +31,7 @@
 #include "embdrv/sbc/encoder/include/sbc_encoder.h"
 #include "osi/include/log.h"
 #include "osi/include/osi.h"
+#include "osi/include/properties.h"
 
 /* Buffer pool */
 #define A2DP_SBC_BUFFER_SIZE BT_DEFAULT_BUFFER_SIZE
@@ -41,17 +42,28 @@
 /* High quality quality setting @ 44.1 khz */
 #define A2DP_SBC_DEFAULT_BITRATE 328
 
+#define A2DP_SBC_HD_BITRATE 455
+#define A2DP_SBC_HD_48KHZ_BITRATE 496
+
+#define A2DP_SBC_HDX_BITRATE 552
+#define A2DP_SBC_HDX_48KHZ_BITRATE 601
+
+#define A2DP_SBC_HDX_ALT_BITRATE 596
+#define A2DP_SBC_HDX_ALT_48KHZ_BITRATE 649
+
 #define A2DP_SBC_NON_EDR_MAX_RATE 229
 
 /*
  * 2DH5 payload size of:
  * 679 bytes - (4 bytes L2CAP Header + 12 bytes AVDTP Header)
  */
-#define MAX_2MBPS_AVDTP_MTU 663
+#define MAX_2MBPS_AVDTP_MTU         663
+#define MIN_3MBPS_AVDTP_SAFE_MTU    800
+
 #define A2DP_SBC_MAX_PCM_ITER_NUM_PER_TICK 3
 
-#define A2DP_SBC_MAX_HQ_FRAME_SIZE_44_1 119
-#define A2DP_SBC_MAX_HQ_FRAME_SIZE_48 115
+#define A2DP_SBC_MAX_HQ_FRAME_SIZE_44_1 165
+#define A2DP_SBC_MAX_HQ_FRAME_SIZE_48 165
 
 /* Define the bitrate step when trying to match bitpool value */
 #define A2DP_SBC_BITRATE_STEP 5
@@ -156,6 +168,9 @@ void a2dp_sbc_encoder_init(const tA2DP_ENCODER_INIT_PEER_PARAMS* p_peer_params,
   bool restart_input = false;
   bool restart_output = false;
   bool config_updated = false;
+
+  LOG_DEBUG(LOG_TAG,"%s: a2dp_sbc_encoder_init", __func__ );
+
   a2dp_sbc_encoder_update(a2dp_sbc_encoder_cb.peer_mtu, a2dp_codec_config,
                           &restart_input, &restart_output, &config_updated);
 }
@@ -175,6 +190,8 @@ bool A2dpCodecConfigSbcSource::updateEncoderUserConfig(
               __func__, name().c_str());
     return false;
   }
+
+  LOG_DEBUG(LOG_TAG,"%s: updateEncoderUserConfig", __func__ );
 
   a2dp_sbc_encoder_update(a2dp_sbc_encoder_cb.peer_mtu, this, p_restart_input,
                           p_restart_output, p_config_updated);
@@ -286,7 +303,7 @@ static void a2dp_sbc_encoder_update(uint16_t peer_mtu,
 
   do {
     if ((p_encoder_params->s16ChannelMode == SBC_JOINT_STEREO) ||
-        (p_encoder_params->s16ChannelMode == SBC_STEREO)) {
+        (p_encoder_params->s16ChannelMode == SBC_STEREO))  {
       s16BitPool = (int16_t)((p_encoder_params->u16BitRate *
                               p_encoder_params->s16NumOfSubBands * 1000 /
                               s16SamplingFreq) -
@@ -833,6 +850,7 @@ static uint8_t calculate_max_frames_per_packet(void) {
 }
 
 static uint16_t a2dp_sbc_source_rate() {
+
   uint16_t rate = A2DP_SBC_DEFAULT_BITRATE;
 
   /* restrict bitrate if a2dp link is non-edr */
@@ -840,6 +858,28 @@ static uint16_t a2dp_sbc_source_rate() {
     rate = A2DP_SBC_NON_EDR_MAX_RATE;
     LOG_VERBOSE(LOG_TAG, "%s: non-edr a2dp sink detected, restrict rate to %d",
                 __func__, rate);
+    return rate;
+  }
+
+  if( osi_property_get_int32("persist.bluetooth.sbc_hd", 0) ) {
+    rate = A2DP_SBC_HD_BITRATE;
+    if (a2dp_sbc_encoder_cb.sbc_encoder_params.s16SamplingFreq == SBC_sf48000) {
+        rate = A2DP_SBC_HD_48KHZ_BITRATE;
+    }
+    if (a2dp_sbc_encoder_cb.peer_supports_3mbps &&
+      a2dp_sbc_encoder_cb.TxAaMtuSize >= MIN_3MBPS_AVDTP_SAFE_MTU) {
+        rate = A2DP_SBC_HDX_BITRATE;
+        if (a2dp_sbc_encoder_cb.sbc_encoder_params.s16SamplingFreq == SBC_sf48000)
+            rate = A2DP_SBC_HDX_48KHZ_BITRATE;
+    }
+  } 
+  if (osi_property_get_int32("persist.bluetooth.sbc_hdx", 0)) {
+    //if (a2dp_sbc_encoder_cb.peer_supports_3mbps &&
+      //a2dp_sbc_encoder_cb.TxAaMtuSize >= MIN_3MBPS_AVDTP_SAFE_MTU) {
+        rate = A2DP_SBC_HDX_ALT_BITRATE;
+        if (a2dp_sbc_encoder_cb.sbc_encoder_params.s16SamplingFreq == SBC_sf48000)
+            rate = A2DP_SBC_HDX_ALT_48KHZ_BITRATE;
+    //}
   }
 
   return rate;

@@ -38,8 +38,9 @@
 #include "embdrv/sbc/encoder/include/sbc_encoder.h"
 #include "osi/include/log.h"
 #include "osi/include/osi.h"
+#include "osi/include/properties.h"
 
-#define A2DP_SBC_MAX_BITPOOL 53
+#define A2DP_SBC_MAX_BITPOOL 112
 
 /* data type for the SBC Codec Information Element */
 typedef struct {
@@ -56,7 +57,7 @@ typedef struct {
 /* SBC Source codec capabilities */
 static const tA2DP_SBC_CIE a2dp_sbc_source_caps = {
     (A2DP_SBC_IE_SAMP_FREQ_44),                         /* samp_freq */
-    (A2DP_SBC_IE_CH_MD_MONO | A2DP_SBC_IE_CH_MD_JOINT), /* ch_mode */
+    (A2DP_SBC_IE_CH_MD_MONO | A2DP_SBC_IE_CH_MD_JOINT | A2DP_SBC_IE_CH_MD_STEREO | A2DP_SBC_IE_CH_MD_DUAL), /* ch_mode */
     (A2DP_SBC_IE_BLOCKS_16 | A2DP_SBC_IE_BLOCKS_12 | A2DP_SBC_IE_BLOCKS_8 |
      A2DP_SBC_IE_BLOCKS_4),            /* block_len */
     A2DP_SBC_IE_SUBBAND_8,             /* num_subbands */
@@ -83,7 +84,7 @@ static const tA2DP_SBC_CIE a2dp_sbc_sink_caps = {
 /* Default SBC codec configuration */
 const tA2DP_SBC_CIE a2dp_sbc_default_config = {
     A2DP_SBC_IE_SAMP_FREQ_44,          /* samp_freq */
-    A2DP_SBC_IE_CH_MD_JOINT,           /* ch_mode */
+    A2DP_SBC_IE_CH_MD_DUAL,            /* ch_mode */
     A2DP_SBC_IE_BLOCKS_16,             /* block_len */
     A2DP_SBC_IE_SUBBAND_8,             /* num_subbands */
     A2DP_SBC_IE_ALLOC_MD_L,            /* alloc_method */
@@ -112,6 +113,7 @@ static tA2DP_STATUS A2DP_CodecInfoMatchesCapabilitySbc(
     bool is_capability);
 static void A2DP_ParseMplHeaderSbc(uint8_t* p_src, bool* p_frag, bool* p_start,
                                    bool* p_last, uint8_t* p_num);
+
 
 // Builds the SBC Media Codec Capabilities byte sequence beginning from the
 // LOSC octet. |media_type| is the media type |AVDT_MEDIA_TYPE_*|.
@@ -313,6 +315,7 @@ bool A2DP_IsPeerSourceCodecSupportedSbc(const uint8_t* p_codec_info) {
 }
 
 void A2DP_InitDefaultCodecSbc(uint8_t* p_codec_info) {
+  LOG_DEBUG(LOG_TAG, "%s: A2DP_InitDefaultCodecSbc", __func__);
   if (A2DP_BuildInfoSbc(AVDT_MEDIA_TYPE_AUDIO, &a2dp_sbc_default_config,
                         p_codec_info) != A2DP_SUCCESS) {
     LOG_ERROR(LOG_TAG, "%s: A2DP_BuildInfoSbc failed", __func__);
@@ -340,19 +343,19 @@ static tA2DP_STATUS A2DP_CodecInfoMatchesCapabilitySbc(
 
   /* verify that each parameter is in range */
 
-  LOG_VERBOSE(LOG_TAG, "%s: FREQ peer: 0x%x, capability 0x%x", __func__,
+  LOG_DEBUG(LOG_TAG, "%s: FREQ peer: 0x%x, capability 0x%x", __func__,
               cfg_cie.samp_freq, p_cap->samp_freq);
-  LOG_VERBOSE(LOG_TAG, "%s: CH_MODE peer: 0x%x, capability 0x%x", __func__,
+  LOG_DEBUG(LOG_TAG, "%s: CH_MODE peer: 0x%x, capability 0x%x", __func__,
               cfg_cie.ch_mode, p_cap->ch_mode);
-  LOG_VERBOSE(LOG_TAG, "%s: BLOCK_LEN peer: 0x%x, capability 0x%x", __func__,
+  LOG_DEBUG(LOG_TAG, "%s: BLOCK_LEN peer: 0x%x, capability 0x%x", __func__,
               cfg_cie.block_len, p_cap->block_len);
-  LOG_VERBOSE(LOG_TAG, "%s: SUB_BAND peer: 0x%x, capability 0x%x", __func__,
+  LOG_DEBUG(LOG_TAG, "%s: SUB_BAND peer: 0x%x, capability 0x%x", __func__,
               cfg_cie.num_subbands, p_cap->num_subbands);
-  LOG_VERBOSE(LOG_TAG, "%s: ALLOC_METHOD peer: 0x%x, capability 0x%x", __func__,
+  LOG_DEBUG(LOG_TAG, "%s: ALLOC_METHOD peer: 0x%x, capability 0x%x", __func__,
               cfg_cie.alloc_method, p_cap->alloc_method);
-  LOG_VERBOSE(LOG_TAG, "%s: MIN_BitPool peer: 0x%x, capability 0x%x", __func__,
+  LOG_DEBUG(LOG_TAG, "%s: MIN_BitPool peer: 0x%x, capability 0x%x", __func__,
               cfg_cie.min_bitpool, p_cap->min_bitpool);
-  LOG_VERBOSE(LOG_TAG, "%s: MAX_BitPool peer: 0x%x, capability 0x%x", __func__,
+  LOG_DEBUG(LOG_TAG, "%s: MAX_BitPool peer: 0x%x, capability 0x%x", __func__,
               cfg_cie.max_bitpool, p_cap->max_bitpool);
 
   /* sampling frequency */
@@ -572,6 +575,8 @@ int A2DP_GetChannelModeCodeSbc(const uint8_t* p_codec_info) {
     return -1;
   }
 
+  LOG_DEBUG(LOG_TAG, "%s: ch_mode=0x%X", __func__, (unsigned)sbc_cie.ch_mode);
+
   switch (sbc_cie.ch_mode) {
     case A2DP_SBC_IE_CH_MD_MONO:
       return SBC_MONO;
@@ -636,6 +641,16 @@ int A2DP_GetMaxBitpoolSbc(const uint8_t* p_codec_info) {
               a2dp_status);
     return -1;
   }
+
+  LOG_DEBUG(LOG_TAG, "%s: Peer max_bitpool: %d", __func__, sbc_cie.max_bitpool);
+
+  //if( osi_property_get_int32("persist.bluetooth.sbc_hdx", 0) && sbc_cie.max_bitpool) {
+  //  return 76;
+  //}
+
+  //if( osi_property_get_int32("persist.bluetooth.sbc_hd", 0) ) {
+    //return 76;
+  //}
 
   return sbc_cie.max_bitpool;
 }
@@ -976,8 +991,10 @@ static bool select_audio_bits_per_sample(
 //
 static bool select_best_channel_mode(uint8_t ch_mode, tA2DP_SBC_CIE* p_result,
                                      btav_a2dp_codec_config_t* p_codec_config) {
-  if (ch_mode & A2DP_SBC_IE_CH_MD_JOINT) {
-    p_result->ch_mode = A2DP_SBC_IE_CH_MD_JOINT;
+  LOG_DEBUG(LOG_TAG, "%s: ch_mode=0x%X", __func__, (unsigned)ch_mode);
+
+  if (ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
+    p_result->ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
     p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
     return true;
   }
@@ -986,14 +1003,19 @@ static bool select_best_channel_mode(uint8_t ch_mode, tA2DP_SBC_CIE* p_result,
     p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
     return true;
   }
-  if (ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
-    p_result->ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
+  if (ch_mode & A2DP_SBC_IE_CH_MD_JOINT) {
+    p_result->ch_mode = A2DP_SBC_IE_CH_MD_JOINT;
     p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
     return true;
   }
   if (ch_mode & A2DP_SBC_IE_CH_MD_MONO) {
     p_result->ch_mode = A2DP_SBC_IE_CH_MD_MONO;
     p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_MONO;
+    return true;
+  }
+  if (ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
+    p_result->ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
+    p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
     return true;
   }
   return false;
@@ -1017,13 +1039,20 @@ static bool select_audio_channel_mode(
       }
       break;
     case BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO:
-      if (ch_mode & A2DP_SBC_IE_CH_MD_JOINT) {
-        p_result->ch_mode = A2DP_SBC_IE_CH_MD_JOINT;
-        p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
-        return true;
+      if( osi_property_get_int32("persist.bluetooth.sbc_hd", 0) ) {
+          if (ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
+            p_result->ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
+            p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
+            return true;
+        }
       }
       if (ch_mode & A2DP_SBC_IE_CH_MD_STEREO) {
         p_result->ch_mode = A2DP_SBC_IE_CH_MD_STEREO;
+        p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
+        return true;
+      }
+      if (ch_mode & A2DP_SBC_IE_CH_MD_JOINT) {
+        p_result->ch_mode = A2DP_SBC_IE_CH_MD_JOINT;
         p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
         return true;
       }
@@ -1251,6 +1280,14 @@ bool A2dpCodecConfigSbcBase::setCodecConfig(const uint8_t* p_peer_codec_info,
       }
       break;
     case BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO:
+      if( osi_property_get_int32("persist.bluetooth.sbc_hd", 0) ) {
+          if (ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
+            result_config_cie.ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
+            codec_capability_.channel_mode = codec_user_config_.channel_mode;
+            codec_config_.channel_mode = codec_user_config_.channel_mode;
+            break;
+          }
+      }
       if (ch_mode & A2DP_SBC_IE_CH_MD_JOINT) {
         result_config_cie.ch_mode = A2DP_SBC_IE_CH_MD_JOINT;
         codec_capability_.channel_mode = codec_user_config_.channel_mode;

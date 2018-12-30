@@ -51,6 +51,9 @@
 #define A2DP_SBC_HDX_ALT_BITRATE 596
 #define A2DP_SBC_HDX_ALT_48KHZ_BITRATE 649
 
+#define A2DP_SBC_HDE_ALT_BITRATE 649
+#define A2DP_SBC_HDE_ALT_48KHZ_BITRATE 699
+
 #define A2DP_SBC_NON_EDR_MAX_RATE 229
 
 /*
@@ -58,7 +61,7 @@
  * 679 bytes - (4 bytes L2CAP Header + 12 bytes AVDTP Header)
  */
 #define MAX_2MBPS_AVDTP_MTU         663
-#define MIN_3MBPS_AVDTP_SAFE_MTU    800
+#define MIN_3MBPS_AVDTP_SAFE_MTU    801
 
 #define A2DP_SBC_MAX_PCM_ITER_NUM_PER_TICK 3
 
@@ -862,25 +865,40 @@ static uint16_t a2dp_sbc_source_rate() {
   }
 
   if( osi_property_get_int32("persist.bluetooth.sbc_hd", 0) ) {
+
+    LOG_ERROR(LOG_TAG, "%s: SBC_HD: peer_supports_3mbps: %d", __func__, a2dp_sbc_encoder_cb.peer_supports_3mbps);
+
     rate = A2DP_SBC_HD_BITRATE;
     if (a2dp_sbc_encoder_cb.sbc_encoder_params.s16SamplingFreq == SBC_sf48000) {
         rate = A2DP_SBC_HD_48KHZ_BITRATE;
     }
+
     if (a2dp_sbc_encoder_cb.peer_supports_3mbps &&
-      a2dp_sbc_encoder_cb.TxAaMtuSize >= MIN_3MBPS_AVDTP_SAFE_MTU) {
+        a2dp_sbc_encoder_cb.TxAaMtuSize >= MIN_3MBPS_AVDTP_SAFE_MTU) {
         rate = A2DP_SBC_HDX_BITRATE;
         if (a2dp_sbc_encoder_cb.sbc_encoder_params.s16SamplingFreq == SBC_sf48000)
             rate = A2DP_SBC_HDX_48KHZ_BITRATE;
+
     }
   } 
   if (osi_property_get_int32("persist.bluetooth.sbc_hdx", 0)) {
-    //if (a2dp_sbc_encoder_cb.peer_supports_3mbps &&
-      //a2dp_sbc_encoder_cb.TxAaMtuSize >= MIN_3MBPS_AVDTP_SAFE_MTU) {
+    if (a2dp_sbc_encoder_cb.peer_supports_3mbps &&
+      a2dp_sbc_encoder_cb.TxAaMtuSize >= MIN_3MBPS_AVDTP_SAFE_MTU) {
         rate = A2DP_SBC_HDX_ALT_BITRATE;
         if (a2dp_sbc_encoder_cb.sbc_encoder_params.s16SamplingFreq == SBC_sf48000)
             rate = A2DP_SBC_HDX_ALT_48KHZ_BITRATE;
-    //}
+    }
   }
+
+  if (osi_property_get_int32("persist.bluetooth.sbc_hde", 0)) {
+    if (a2dp_sbc_encoder_cb.peer_supports_3mbps &&
+      a2dp_sbc_encoder_cb.TxAaMtuSize >= MIN_3MBPS_AVDTP_SAFE_MTU) {
+        rate = A2DP_SBC_HDE_ALT_BITRATE;
+        if (a2dp_sbc_encoder_cb.sbc_encoder_params.s16SamplingFreq == SBC_sf48000)
+            rate = A2DP_SBC_HDE_ALT_48KHZ_BITRATE;
+    }
+  }
+  
 
   return rate;
 }

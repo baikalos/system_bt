@@ -56,8 +56,8 @@ typedef struct {
 
 /* SBC Source codec capabilities */
 static const tA2DP_SBC_CIE a2dp_sbc_source_caps = {
-    (A2DP_SBC_IE_SAMP_FREQ_44),                         /* samp_freq */
-    (A2DP_SBC_IE_CH_MD_MONO | A2DP_SBC_IE_CH_MD_JOINT | A2DP_SBC_IE_CH_MD_STEREO | A2DP_SBC_IE_CH_MD_DUAL), /* ch_mode */
+    (A2DP_SBC_IE_SAMP_FREQ_48),                         /* samp_freq */
+    (A2DP_SBC_IE_CH_MD_MONO | A2DP_SBC_IE_CH_MD_JOINT | A2DP_SBC_IE_CH_MD_DUAL), /* ch_mode */
     (A2DP_SBC_IE_BLOCKS_16 | A2DP_SBC_IE_BLOCKS_12 | A2DP_SBC_IE_BLOCKS_8 |
      A2DP_SBC_IE_BLOCKS_4),            /* block_len */
     A2DP_SBC_IE_SUBBAND_8,             /* num_subbands */
@@ -70,8 +70,7 @@ static const tA2DP_SBC_CIE a2dp_sbc_source_caps = {
 /* SBC Sink codec capabilities */
 static const tA2DP_SBC_CIE a2dp_sbc_sink_caps = {
     (A2DP_SBC_IE_SAMP_FREQ_48 | A2DP_SBC_IE_SAMP_FREQ_44), /* samp_freq */
-    (A2DP_SBC_IE_CH_MD_MONO | A2DP_SBC_IE_CH_MD_STEREO |
-     A2DP_SBC_IE_CH_MD_JOINT | A2DP_SBC_IE_CH_MD_DUAL), /* ch_mode */
+    (A2DP_SBC_IE_CH_MD_MONO | A2DP_SBC_IE_CH_MD_JOINT | A2DP_SBC_IE_CH_MD_DUAL), /* ch_mode */
     (A2DP_SBC_IE_BLOCKS_16 | A2DP_SBC_IE_BLOCKS_12 | A2DP_SBC_IE_BLOCKS_8 |
      A2DP_SBC_IE_BLOCKS_4),                            /* block_len */
     (A2DP_SBC_IE_SUBBAND_4 | A2DP_SBC_IE_SUBBAND_8),   /* num_subbands */
@@ -83,7 +82,7 @@ static const tA2DP_SBC_CIE a2dp_sbc_sink_caps = {
 
 /* Default SBC codec configuration */
 const tA2DP_SBC_CIE a2dp_sbc_default_config = {
-    A2DP_SBC_IE_SAMP_FREQ_44,          /* samp_freq */
+    A2DP_SBC_IE_SAMP_FREQ_48,          /* samp_freq */
     A2DP_SBC_IE_CH_MD_DUAL,            /* ch_mode */
     A2DP_SBC_IE_BLOCKS_16,             /* block_len */
     A2DP_SBC_IE_SUBBAND_8,             /* num_subbands */

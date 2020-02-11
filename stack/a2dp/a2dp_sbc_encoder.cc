@@ -40,8 +40,12 @@
 // A2DP SBC encoder interval in milliseconds.
 #define A2DP_SBC_ENCODER_INTERVAL_MS 20
 
-/* High quality quality setting @ 44.1 khz */
-#define A2DP_SBC_DEFAULT_BITRATE 328
+/*
+ * Higher quality setting. 495 kbps @ 48 khz, 454.8 kbps @ 44.1 khz.
+ * Up to 4 frames for 2DH5, 6 frames for 3DH5.
+ */
+#define A2DP_SBC_DEFAULT_BITRATE 455
+#define A2DP_SBC_48KHZ_BITRATE 496
 
 /*
  * SBC Dual Channel (SBC HD) 2DH5 alternative bitrates.

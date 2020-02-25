@@ -852,20 +852,21 @@ static uint16_t a2dp_sbc_source_rate() {
     rate = A2DP_SBC_48KHZ_BITRATE;
 
   /* 3DH5 maximum bitrates */
-  if (a2dp_sbc_encoder_cb.peer_supports_3mbps &&
-      a2dp_sbc_encoder_cb.TxAaMtuSize >= MIN_3MBPS_AVDTP_SAFE_MTU) {
-    rate = A2DP_SBC_3DH5_DEFAULT_BITRATE;
-    if (a2dp_sbc_encoder_cb.sbc_encoder_params.s16SamplingFreq == SBC_sf48000)
-      rate = A2DP_SBC_3DH5_48KHZ_BITRATE;
-  }
 
-  /* 2DH5 alternative bitrates */
-  if (!a2dp_sbc_encoder_cb.peer_supports_3mbps &&
-      osi_property_get_int32(A2DP_SBC_HD_PROP, 0)) {
-    rate = A2DP_SBC_2DH5_ALT_BITRATE;
-    if (a2dp_sbc_encoder_cb.sbc_encoder_params.s16SamplingFreq == SBC_sf48000)
-      rate = A2DP_SBC_2DH5_ALT_48KHZ_BITRATE;
+  if( osi_property_get_int32("persist.bluetooth.sbc_hdx", 0) && 
+      a2dp_sbc_encoder_cb.peer_supports_3mbps &&
+      a2dp_sbc_encoder_cb.TxAaMtuSize >= MIN_3MBPS_AVDTP_SAFE_MTU) {
+	rate = A2DP_SBC_3DH5_DEFAULT_BITRATE;
+    	if (a2dp_sbc_encoder_cb.sbc_encoder_params.s16SamplingFreq == SBC_sf48000)
+      	    rate = A2DP_SBC_3DH5_48KHZ_BITRATE;
+  } else if( osi_property_get_int32("persist.bluetooth.sbc_hd", 0) ) {
+  	/* 2DH5 alternative bitrates */
+	    rate = A2DP_SBC_2DH5_ALT_BITRATE;
+	    if (a2dp_sbc_encoder_cb.sbc_encoder_params.s16SamplingFreq == SBC_sf48000)
+	        rate = A2DP_SBC_2DH5_ALT_48KHZ_BITRATE;
   }
+  
+  
 
   /* restrict bitrate if a2dp link is non-edr */
   if (!a2dp_sbc_encoder_cb.is_peer_edr) {

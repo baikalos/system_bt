@@ -44,19 +44,27 @@
  * Higher quality setting. 495 kbps @ 48 khz, 454.8 kbps @ 44.1 khz.
  * Up to 4 frames for 2DH5, 6 frames for 3DH5.
  */
-#define A2DP_SBC_DEFAULT_BITRATE 455
-#define A2DP_SBC_48KHZ_BITRATE 496
+#define A2DP_SBC_DEFAULT_BITRATE 328
+#define A2DP_SBC_48KHZ_BITRATE 378
 
 /*
  * SBC Dual Channel (SBC HD) 2DH5 alternative bitrates.
  * 648 kbps @ 48 khz, 595.4 kbps @ 44.1 khz.
  * Up to 3 frames for 2DH5.
  */
-#define A2DP_SBC_2DH5_ALT_BITRATE 596
-#define A2DP_SBC_2DH5_ALT_48KHZ_BITRATE 649
+#define A2DP_SBC_2DH5_BITRATE 596
+#define A2DP_SBC_2DH5_48KHZ_BITRATE 649
 
 // SBC HD alternative bitrate property
 #define A2DP_SBC_HD_PROP "persist.bluetooth.sbc_hd_higher_bitrate"
+
+/*
+ * SBC Dual Channel (SBC HD) 3DH5 bitrates.
+ * 600 kbps @ 48 khz, 551.3 kbps @ 44.1 khz.
+ * Up to 5 frames for 3DH5.
+ */
+#define A2DP_SBC_3DH5_BITRATE 496
+#define A2DP_SBC_3DH5_48KHZ_BITRATE 549
 
 #define A2DP_SBC_NON_EDR_MAX_RATE 229
 
@@ -856,14 +864,14 @@ static uint16_t a2dp_sbc_source_rate() {
   if( osi_property_get_int32("persist.bluetooth.sbc_hdx", 0) && 
       a2dp_sbc_encoder_cb.peer_supports_3mbps &&
       a2dp_sbc_encoder_cb.TxAaMtuSize >= MIN_3MBPS_AVDTP_SAFE_MTU) {
-	rate = A2DP_SBC_3DH5_DEFAULT_BITRATE;
+	rate = A2DP_SBC_2DH5_BITRATE;
     	if (a2dp_sbc_encoder_cb.sbc_encoder_params.s16SamplingFreq == SBC_sf48000)
-      	    rate = A2DP_SBC_3DH5_48KHZ_BITRATE;
+      	    rate = A2DP_SBC_2DH5_48KHZ_BITRATE;
   } else if( osi_property_get_int32("persist.bluetooth.sbc_hd", 0) ) {
   	/* 2DH5 alternative bitrates */
-	    rate = A2DP_SBC_2DH5_ALT_BITRATE;
+	    rate = A2DP_SBC_3DH5_BITRATE;
 	    if (a2dp_sbc_encoder_cb.sbc_encoder_params.s16SamplingFreq == SBC_sf48000)
-	        rate = A2DP_SBC_2DH5_ALT_48KHZ_BITRATE;
+	        rate = A2DP_SBC_3DH5_48KHZ_BITRATE;
   }
   
   

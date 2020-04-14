@@ -40,6 +40,8 @@
 // A2DP SBC encoder interval in milliseconds.
 #define A2DP_SBC_ENCODER_INTERVAL_MS 20
 
+#define MIN_3MBPS_AVDTP_SAFE_MTU 800
+
 /*
  * Higher quality setting. 495 kbps @ 48 khz, 454.8 kbps @ 44.1 khz.
  * Up to 4 frames for 2DH5, 6 frames for 3DH5.

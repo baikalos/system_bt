@@ -221,6 +221,8 @@ static void a2dp_sbc_encoder_update(uint16_t peer_mtu,
   uint8_t protect = 0;
   int min_bitpool;
   int max_bitpool;
+  char strBitRate[16];
+
 
   *p_restart_input = false;
   *p_restart_output = false;
@@ -395,6 +397,17 @@ static void a2dp_sbc_encoder_update(uint16_t peer_mtu,
   /* Reset the SBC encoder */
   SBC_Encoder_Init(&a2dp_sbc_encoder_cb.sbc_encoder_params);
   a2dp_sbc_encoder_cb.tx_sbc_frames = calculate_max_frames_per_packet();
+
+  if( p_encoder_params->u16BitRate > 549 ) {
+      osi_property_set("baikal.last.a2dp_codec","SBC HDX");
+  } else if ( p_encoder_params->u16BitRate > 378 ) {
+      osi_property_set("baikal.last.a2dp_codec","SBC HD");
+  } else {
+      osi_property_set("baikal.last.a2dp_codec","SBC");
+  }
+
+  snprintf ( strBitRate, 16, "%d", p_encoder_params->u16BitRate);
+  osi_property_set("baikal.last.a2dp_bitrate", strBitRate);
 }
 
 void a2dp_sbc_encoder_cleanup(void) {

@@ -36,6 +36,7 @@
 #include "common/time_util.h"
 #include "osi/include/log.h"
 #include "osi/include/osi.h"
+#include "osi/include/properties.h"
 
 //
 // Encoder for LDAC Source Codec
@@ -505,6 +506,9 @@ static void a2dp_vendor_ldac_encoder_update(uint16_t peer_mtu,
               LDACBT_HANDLE_ERR(err_code), LDACBT_BLOCK_ERR(err_code),
               err_code);
   }
+
+  osi_property_set("baikal.last.a2dp_codec","LDAC");
+  osi_property_set("baikal.last.a2dp_bitrate", 0);
 }
 
 void a2dp_vendor_ldac_encoder_cleanup(void) {

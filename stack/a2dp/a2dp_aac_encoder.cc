@@ -30,6 +30,7 @@
 #include "common/time_util.h"
 #include "osi/include/log.h"
 #include "osi/include/osi.h"
+#include "osi/include/properties.h"
 
 //
 // Encoder for AAC Source Codec
@@ -451,6 +452,9 @@ static void a2dp_aac_encoder_update(uint16_t peer_mtu,
             __func__, p_encoder_params->frame_length,
             p_encoder_params->input_channels_n,
             p_encoder_params->max_encoded_buffer_bytes);
+
+  osi_property_set("baikal.last.a2dp_codec","AAC");
+  osi_property_set("baikal.last.a2dp_bitrate", 0);
 }
 
 void a2dp_aac_encoder_cleanup(void) {

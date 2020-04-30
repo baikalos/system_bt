@@ -52,30 +52,27 @@
 
 /*
  * SBC Dual Channel (SBC HD) 2DH5 bitrates.
- * 600 kbps @ 48 khz, 551.3 kbps @ 44.1 khz.
- * Up to 5 frames for 3DH5.
+ * 496 kbps @ 48 khz, 452 kbps @ 44.1 khz.
+ * Up to 5 frames for 2DH5.
  */
-#define A2DP_SBC_3DH5_BITRATE 452
-#define A2DP_SBC_3DH5_48KHZ_BITRATE 496
+#define A2DP_SBC_2DH5_BITRATE 452
+#define A2DP_SBC_2DH5_48KHZ_BITRATE 496
 
 /*
  * SBC Dual Channel (SBC HD) 3DH5 alternative bitrates.
- * 648 kbps @ 48 khz, 595.4 kbps @ 44.1 khz.
- * Up to 3 frames for 2DH5.
+ * 596 kbps @ 48 khz, 551 kbps @ 44.1 khz.
+ * Up to 5 frames for 3DH5.
  */
-#define A2DP_SBC_2DH5_BITRATE 551
-#define A2DP_SBC_2DH5_48KHZ_BITRATE 596
-
-// SBC HD alternative bitrate property
-#define A2DP_SBC_HD_PROP "persist.bluetooth.sbc_hd_higher_bitrate"
+#define A2DP_SBC_3DH5_BITRATE 551
+#define A2DP_SBC_3DH5_48KHZ_BITRATE 596
 
 
 #define A2DP_SBC_NON_EDR_MAX_RATE 229
 
 #define A2DP_SBC_MAX_PCM_ITER_NUM_PER_TICK 3
 
-#define A2DP_SBC_MAX_HQ_FRAME_SIZE_44_1 119
-#define A2DP_SBC_MAX_HQ_FRAME_SIZE_48 115
+#define A2DP_SBC_MAX_HQ_FRAME_SIZE_44_1 165
+#define A2DP_SBC_MAX_HQ_FRAME_SIZE_48 165
 
 /* Define the bitrate step when trying to match bitpool value */
 #define A2DP_SBC_BITRATE_STEP 5
@@ -889,21 +886,22 @@ static uint16_t a2dp_sbc_source_rate() {
   /* 3DH5 maximum bitrates */
   if( a2dp_sbc_encoder_cb.peer_supports_3mbps &&
     a2dp_sbc_encoder_cb.TxAaMtuSize >= MIN_3MBPS_AVDTP_SAFE_MTU) {
+    /* 3DH5 alternative bitrates */
 
     if( osi_property_get_int32("persist.bluetooth.sbc_hdx", 0) ) {
-    	rate = A2DP_SBC_2DH5_BITRATE;
+    	rate = A2DP_SBC_3DH5_BITRATE;
     	if (a2dp_sbc_encoder_cb.sbc_encoder_params.s16SamplingFreq == SBC_sf48000)
-      	    rate = A2DP_SBC_2DH5_48KHZ_BITRATE;
+      	    rate = A2DP_SBC_3DH5_48KHZ_BITRATE;
         LOG_VERBOSE(LOG_TAG, "%s: a2dp 3Mbps EDR rate %d", __func__, rate);
         return rate;
     }
   } 
 
   if( osi_property_get_int32("persist.bluetooth.sbc_hd", 0) ) {
-  	/* 2DH5 alternative bitrates */
-	    rate = A2DP_SBC_3DH5_BITRATE;
+  	    /* 2DH5 alternative bitrates */
+	    rate = A2DP_SBC_2DH5_BITRATE;
 	    if (a2dp_sbc_encoder_cb.sbc_encoder_params.s16SamplingFreq == SBC_sf48000)
-	        rate = A2DP_SBC_3DH5_48KHZ_BITRATE;
+	        rate = A2DP_SBC_2DH5_48KHZ_BITRATE;
         LOG_VERBOSE(LOG_TAG, "%s: a2dp 2Mbps EDR rate %d", __func__, rate);
         return rate;
   }

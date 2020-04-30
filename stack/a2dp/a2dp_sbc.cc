@@ -38,6 +38,7 @@
 #include "embdrv/sbc/encoder/include/sbc_encoder.h"
 #include "osi/include/log.h"
 #include "osi/include/osi.h"
+#include "osi/include/properties.h"
 
 #define A2DP_SBC_MAX_BITPOOL 83
 
@@ -57,7 +58,7 @@ typedef struct {
 static const tA2DP_SBC_CIE a2dp_sbc_source_caps = {
     (A2DP_SBC_IE_SAMP_FREQ_48 | A2DP_SBC_IE_SAMP_FREQ_44), /* samp_freq */
     (A2DP_SBC_IE_CH_MD_MONO | A2DP_SBC_IE_CH_MD_JOINT |
-     A2DP_SBC_IE_CH_MD_DUAL), /* ch_mode */
+     A2DP_SBC_IE_CH_MD_DUAL | A2DP_SBC_IE_CH_MD_STEREO), /* ch_mode */
     (A2DP_SBC_IE_BLOCKS_16 | A2DP_SBC_IE_BLOCKS_12 | A2DP_SBC_IE_BLOCKS_8 |
      A2DP_SBC_IE_BLOCKS_4),            /* block_len */
     A2DP_SBC_IE_SUBBAND_8,             /* num_subbands */
@@ -82,9 +83,9 @@ static const tA2DP_SBC_CIE a2dp_sbc_sink_caps = {
 };
 
 /* Default SBC codec configuration */
-const tA2DP_SBC_CIE a2dp_sbc_default_config = {
+tA2DP_SBC_CIE a2dp_sbc_default_config = {
     A2DP_SBC_IE_SAMP_FREQ_44,          /* samp_freq */
-    A2DP_SBC_IE_CH_MD_DUAL,            /* ch_mode */
+    A2DP_SBC_IE_CH_MD_JOINT,           /* ch_mode */
     A2DP_SBC_IE_BLOCKS_16,             /* block_len */
     A2DP_SBC_IE_SUBBAND_8,             /* num_subbands */
     A2DP_SBC_IE_ALLOC_MD_L,            /* alloc_method */
@@ -328,11 +329,36 @@ bool A2DP_IsPeerSourceCodecSupportedSbc(const uint8_t* p_codec_info) {
                                              true) == A2DP_SUCCESS);
 }
 
+void A2DP_UpdateDefaultCodecByCurrentConfig() {
+
+  if( osi_property_get_int32("persist.bluetooth.sbc_hd", 0) ) {
+    a2dp_sbc_default_config.ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
+
+    if( osi_property_get_int32("persist.bluetooth.sbc_48", 0) ) {
+        a2dp_sbc_default_config.samp_freq = A2DP_SBC_IE_SAMP_FREQ_48;
+        LOG_ERROR(LOG_TAG, "%s: A2DP_InitDefaultCodecSbc - SBC HD 48", __func__);
+    } else {
+        a2dp_sbc_default_config.samp_freq = A2DP_SBC_IE_SAMP_FREQ_44;
+        LOG_ERROR(LOG_TAG, "%s: A2DP_InitDefaultCodecSbc - SBC HD 44", __func__);
+    }
+
+  } else {
+    a2dp_sbc_default_config.ch_mode = A2DP_SBC_IE_CH_MD_JOINT;
+    a2dp_sbc_default_config.samp_freq = A2DP_SBC_IE_SAMP_FREQ_44;
+    LOG_ERROR(LOG_TAG, "%s: A2DP_InitDefaultCodecSbc - SBC SD", __func__);
+  }
+
+}
+
 void A2DP_InitDefaultCodecSbc(uint8_t* p_codec_info) {
+
+  A2DP_UpdateDefaultCodecByCurrentConfig();
+
   if (A2DP_BuildInfoSbc(AVDT_MEDIA_TYPE_AUDIO, &a2dp_sbc_default_config,
                         p_codec_info) != A2DP_SUCCESS) {
     LOG_ERROR(LOG_TAG, "%s: A2DP_BuildInfoSbc failed", __func__);
   }
+
 }
 
 // Checks whether A2DP SBC codec configuration matches with a device's codec
@@ -1006,8 +1032,8 @@ static bool select_audio_bits_per_sample(
 //
 static bool select_best_channel_mode(uint8_t ch_mode, tA2DP_SBC_CIE* p_result,
                                      btav_a2dp_codec_config_t* p_codec_config) {
-  if (ch_mode & A2DP_SBC_IE_CH_MD_JOINT) {
-    p_result->ch_mode = A2DP_SBC_IE_CH_MD_JOINT;
+  if (ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
+    p_result->ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
     p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
     return true;
   }
@@ -1016,8 +1042,8 @@ static bool select_best_channel_mode(uint8_t ch_mode, tA2DP_SBC_CIE* p_result,
     p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
     return true;
   }
-  if (ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
-    p_result->ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
+  if (ch_mode & A2DP_SBC_IE_CH_MD_JOINT) {
+    p_result->ch_mode = A2DP_SBC_IE_CH_MD_JOINT;
     p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
     return true;
   }
@@ -1192,6 +1218,8 @@ bool A2dpCodecConfigSbcBase::setCodecConfig(const uint8_t* p_peer_codec_info,
       break;
     }
 
+    A2DP_UpdateDefaultCodecByCurrentConfig();
+
     // No user preference - try the default config
     if (select_best_sample_rate(
             a2dp_sbc_default_config.samp_freq & peer_info_cie.samp_freq,
@@ -1341,6 +1369,8 @@ bool A2dpCodecConfigSbcBase::setCodecConfig(const uint8_t* p_peer_codec_info,
                                   &result_config_cie, &codec_config_)) {
       break;
     }
+
+    A2DP_UpdateDefaultCodecByCurrentConfig();
 
     // No user preference - try the default config
     if (select_best_channel_mode(

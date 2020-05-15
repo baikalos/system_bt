@@ -1079,7 +1079,8 @@ static bool select_audio_channel_mode(
       }
       break;
     case BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO:
-      if (ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
+      if (osi_property_get_int32("persist.bluetooth.sbc_hd", 0) && 
+            (ch_mode & A2DP_SBC_IE_CH_MD_DUAL)) {
         p_result->ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
         p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
         return true;
@@ -1091,6 +1092,11 @@ static bool select_audio_channel_mode(
       }
       if (ch_mode & A2DP_SBC_IE_CH_MD_STEREO) {
         p_result->ch_mode = A2DP_SBC_IE_CH_MD_STEREO;
+        p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
+        return true;
+      }
+      if (ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
+        p_result->ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
         p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
         return true;
       }
@@ -1318,7 +1324,8 @@ bool A2dpCodecConfigSbcBase::setCodecConfig(const uint8_t* p_peer_codec_info,
       }
       break;
     case BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO:
-      if (ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
+      if ( osi_property_get_int32("persist.bluetooth.sbc_hd", 0) && 
+            (ch_mode & A2DP_SBC_IE_CH_MD_DUAL) ) {
         LOG_ERROR(LOG_TAG, "%s: A2DP A2DP_SBC_IE_CH_MD_DUAL", __func__);
         result_config_cie.ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
         codec_capability_.channel_mode = codec_user_config_.channel_mode;
@@ -1335,6 +1342,13 @@ bool A2dpCodecConfigSbcBase::setCodecConfig(const uint8_t* p_peer_codec_info,
       if (ch_mode & A2DP_SBC_IE_CH_MD_STEREO) {
         LOG_ERROR(LOG_TAG, "%s: A2DP A2DP_SBC_IE_CH_MD_STEREO", __func__);
         result_config_cie.ch_mode = A2DP_SBC_IE_CH_MD_STEREO;
+        codec_capability_.channel_mode = codec_user_config_.channel_mode;
+        codec_config_.channel_mode = codec_user_config_.channel_mode;
+        break;
+      }
+      if (ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
+        LOG_ERROR(LOG_TAG, "%s: A2DP A2DP_SBC_IE_CH_MD_DUAL", __func__);
+        result_config_cie.ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
         codec_capability_.channel_mode = codec_user_config_.channel_mode;
         codec_config_.channel_mode = codec_user_config_.channel_mode;
         break;

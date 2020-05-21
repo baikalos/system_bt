@@ -135,6 +135,8 @@ static tA2DP_STATUS A2DP_BuildInfoSbc(uint8_t media_type,
       (p_ie->max_bitpool < A2DP_SBC_IE_MIN_BITPOOL) ||
       (p_ie->max_bitpool > A2DP_SBC_IE_MAX_BITPOOL)) {
     /* if any unused bit is set */
+
+    LOG_ERROR(LOG_TAG, "%s: A2DP_BuildInfoSbc - INVALID_PARAMS", __func__);
     return A2DP_INVALID_PARAMS;
   }
 
@@ -943,26 +945,14 @@ bool A2dpCodecConfigSbcSource::useRtpHeaderMarkerBit() const { return false; }
 static bool select_best_sample_rate(uint8_t samp_freq, tA2DP_SBC_CIE* p_result,
                                     btav_a2dp_codec_config_t* p_codec_config) {
 
-  if( osi_property_get_int32("persist.bluetooth.sbc_hd", 0) ) {
-    if( osi_property_get_int32("persist.bluetooth.sbc_48", 0) ) {
-        LOG_ERROR(LOG_TAG, "%s: A2DP_InitDefaultCodecSbc - SBC HD 48", __func__);
-    } else {
-        samp_freq &= ~A2DP_SBC_IE_SAMP_FREQ_48;
-        LOG_ERROR(LOG_TAG, "%s: A2DP_InitDefaultCodecSbc - SBC HD 44", __func__);
-    }
-  } else {
-        samp_freq &= ~A2DP_SBC_IE_SAMP_FREQ_48;
-        LOG_ERROR(LOG_TAG, "%s: A2DP_InitDefaultCodecSbc - SBC SD 44", __func__);
-  }
-
-  if (samp_freq & A2DP_SBC_IE_SAMP_FREQ_48) {
-    p_result->samp_freq = A2DP_SBC_IE_SAMP_FREQ_48;
-    p_codec_config->sample_rate = BTAV_A2DP_CODEC_SAMPLE_RATE_48000;
-    return true;
-  }
   if (samp_freq & A2DP_SBC_IE_SAMP_FREQ_44) {
     p_result->samp_freq = A2DP_SBC_IE_SAMP_FREQ_44;
     p_codec_config->sample_rate = BTAV_A2DP_CODEC_SAMPLE_RATE_44100;
+    return true;
+  }
+  if (samp_freq & A2DP_SBC_IE_SAMP_FREQ_48) {
+    p_result->samp_freq = A2DP_SBC_IE_SAMP_FREQ_48;
+    p_codec_config->sample_rate = BTAV_A2DP_CODEC_SAMPLE_RATE_48000;
     return true;
   }
   return false;
@@ -1172,7 +1162,7 @@ bool A2dpCodecConfigSbcBase::setCodecConfig(const uint8_t* p_peer_codec_info,
 
   // Try using the prefered peer codec config (if valid), instead of the peer
   // capability.
-  if (is_capability) {
+  if (is_capability && !osi_property_get_int32("persist.bluetooth.sbc_hd", 0) ) {
     LOG_ERROR(LOG_TAG, "%s: A2DP is_capability=true", __func__);
     
     if (is_source_) {
@@ -1204,38 +1194,7 @@ bool A2dpCodecConfigSbcBase::setCodecConfig(const uint8_t* p_peer_codec_info,
   //
   samp_freq = p_a2dp_sbc_caps->samp_freq & peer_info_cie.samp_freq;
   codec_config_.sample_rate = BTAV_A2DP_CODEC_SAMPLE_RATE_NONE;
-
-  /*
-
-  switch (codec_user_config_.sample_rate) {
-    case BTAV_A2DP_CODEC_SAMPLE_RATE_44100:
-      if (samp_freq & A2DP_SBC_IE_SAMP_FREQ_44) {
-        result_config_cie.samp_freq = A2DP_SBC_IE_SAMP_FREQ_44;
-        codec_capability_.sample_rate = codec_user_config_.sample_rate;
-        codec_config_.sample_rate = codec_user_config_.sample_rate;
-      }
-      break;
-    case BTAV_A2DP_CODEC_SAMPLE_RATE_48000:
-      if (samp_freq & A2DP_SBC_IE_SAMP_FREQ_48) {
-        result_config_cie.samp_freq = A2DP_SBC_IE_SAMP_FREQ_48;
-        codec_capability_.sample_rate = codec_user_config_.sample_rate;
-        codec_config_.sample_rate = codec_user_config_.sample_rate;
-      }
-      break;
-    case BTAV_A2DP_CODEC_SAMPLE_RATE_88200:
-    case BTAV_A2DP_CODEC_SAMPLE_RATE_96000:
-    case BTAV_A2DP_CODEC_SAMPLE_RATE_176400:
-    case BTAV_A2DP_CODEC_SAMPLE_RATE_192000:
-    case BTAV_A2DP_CODEC_SAMPLE_RATE_16000:
-    case BTAV_A2DP_CODEC_SAMPLE_RATE_24000:
-    case BTAV_A2DP_CODEC_SAMPLE_RATE_NONE:
-      codec_capability_.sample_rate = BTAV_A2DP_CODEC_SAMPLE_RATE_NONE;
-      codec_config_.sample_rate = BTAV_A2DP_CODEC_SAMPLE_RATE_NONE;
-      break;
-  }
-
-  */
-
+  LOG_ERROR(LOG_TAG, "%s: A2DP samp_freq=0x%x", __func__, samp_freq);
 
   // Select the sample frequency if there is no user preference
   do {
@@ -1257,13 +1216,10 @@ bool A2dpCodecConfigSbcBase::setCodecConfig(const uint8_t* p_peer_codec_info,
     if (samp_freq & A2DP_SBC_IE_SAMP_FREQ_48)
       codec_capability_.sample_rate |= BTAV_A2DP_CODEC_SAMPLE_RATE_48000;
 
-    // No user preference - try the codec audio config
-    //if (select_audio_sample_rate(&codec_audio_config_, samp_freq,
-    //                             &result_config_cie, &codec_config_)) {
-    //  LOG_ERROR(LOG_TAG, "%s: A2DP select_audio_sample_rate codec_audio_config_", __func__);
-    //  break;
-    //}
     // No user preference - try the default config
+
+    LOG_ERROR(LOG_TAG, "%s: A2DP def.samp_freq=0x%x, peer.samp_freq=0x%x", __func__, a2dp_sbc_default_config.samp_freq, peer_info_cie.samp_freq);
+
     if (select_best_sample_rate(
             a2dp_sbc_default_config.samp_freq & peer_info_cie.samp_freq,
             &result_config_cie, &codec_config_)) {
@@ -1274,6 +1230,7 @@ bool A2dpCodecConfigSbcBase::setCodecConfig(const uint8_t* p_peer_codec_info,
     // No user preference - use the best match
     if (select_best_sample_rate(samp_freq, &result_config_cie,
                                 &codec_config_)) {
+      LOG_ERROR(LOG_TAG, "%s: A2DP select_audio_sample_rate samp_freq", __func__);
       break;
     }
   } while (false);

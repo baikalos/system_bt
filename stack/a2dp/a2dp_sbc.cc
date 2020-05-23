@@ -1045,28 +1045,28 @@ static bool select_best_channel_mode(uint8_t ch_mode, tA2DP_SBC_CIE* p_result,
     LOG_ERROR(LOG_TAG, "%s: select_best_channel_mode - DUAL", __func__);
     return true;
   }
-  if (ch_mode & A2DP_SBC_IE_CH_MD_STEREO) {
-    p_result->ch_mode = A2DP_SBC_IE_CH_MD_STEREO;
-    p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
-    LOG_ERROR(LOG_TAG, "%s: select_best_channel_mode - STEREO", __func__);
-    return true;
-  }
   if (ch_mode & A2DP_SBC_IE_CH_MD_JOINT) {
     p_result->ch_mode = A2DP_SBC_IE_CH_MD_JOINT;
     p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
     LOG_ERROR(LOG_TAG, "%s: select_best_channel_mode - JOINT", __func__);
     return true;
   }
-  if (ch_mode & A2DP_SBC_IE_CH_MD_MONO) {
-    p_result->ch_mode = A2DP_SBC_IE_CH_MD_MONO;
-    p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_MONO;
-    LOG_ERROR(LOG_TAG, "%s: select_best_channel_mode - MONO", __func__);
+  if (ch_mode & A2DP_SBC_IE_CH_MD_STEREO) {
+    p_result->ch_mode = A2DP_SBC_IE_CH_MD_STEREO;
+    p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
+    LOG_ERROR(LOG_TAG, "%s: select_best_channel_mode - STEREO", __func__);
     return true;
   }
   if (ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
     p_result->ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
     p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
     LOG_ERROR(LOG_TAG, "%s: select_best_channel_mode - DUAL", __func__);
+    return true;
+  }
+  if (ch_mode & A2DP_SBC_IE_CH_MD_MONO) {
+    p_result->ch_mode = A2DP_SBC_IE_CH_MD_MONO;
+    p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_MONO;
+    LOG_ERROR(LOG_TAG, "%s: select_best_channel_mode - MONO", __func__);
     return true;
   }
 

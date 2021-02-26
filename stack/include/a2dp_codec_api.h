@@ -44,6 +44,7 @@ typedef struct {
   bool is_peer_edr;          // True if the A2DP peer supports EDR
   bool peer_supports_3mbps;  // True if the A2DP peer supports 3 Mbps EDR
   uint16_t peer_mtu;         // MTU of the A2DP peer
+  RawAddress peer_address;
 } tA2DP_ENCODER_INIT_PEER_PARAMS;
 
 class A2dpCodecConfig {

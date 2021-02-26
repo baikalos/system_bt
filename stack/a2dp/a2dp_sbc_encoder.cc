@@ -120,6 +120,7 @@ typedef struct {
   bool is_peer_edr;         /* True if the peer device supports EDR */
   bool peer_supports_3mbps; /* True if the peer device supports 3Mbps EDR */
   uint16_t peer_mtu;        /* MTU of the A2DP peer */
+  RawAddress peer_address;
   uint32_t timestamp;       /* Timestamp for the A2DP frames */
   SBC_ENC_PARAMS sbc_encoder_params;
   tA2DP_FEEDING_PARAMS feeding_params;
@@ -168,7 +169,10 @@ void a2dp_sbc_encoder_init(const tA2DP_ENCODER_INIT_PEER_PARAMS* p_peer_params,
   a2dp_sbc_encoder_cb.is_peer_edr = p_peer_params->is_peer_edr;
   a2dp_sbc_encoder_cb.peer_supports_3mbps = p_peer_params->peer_supports_3mbps;
   a2dp_sbc_encoder_cb.peer_mtu = p_peer_params->peer_mtu;
+  a2dp_sbc_encoder_cb.peer_address = p_peer_params->peer_address;
   a2dp_sbc_encoder_cb.timestamp = 0;
+
+  LOG_ERROR(LOG_TAG, "%s: peer: %s", __func__, p_peer_params->peer_address.ToString().c_str());
 
   // NOTE: Ignore the restart_input / restart_output flags - this initization
   // happens when the connection is (re)started.
@@ -185,6 +189,7 @@ bool A2dpCodecConfigSbcSource::updateEncoderUserConfig(
   a2dp_sbc_encoder_cb.is_peer_edr = p_peer_params->is_peer_edr;
   a2dp_sbc_encoder_cb.peer_supports_3mbps = p_peer_params->peer_supports_3mbps;
   a2dp_sbc_encoder_cb.peer_mtu = p_peer_params->peer_mtu;
+  a2dp_sbc_encoder_cb.peer_address = p_peer_params->peer_address;
   a2dp_sbc_encoder_cb.timestamp = 0;
 
   if (a2dp_sbc_encoder_cb.peer_mtu == 0) {
@@ -194,6 +199,8 @@ bool A2dpCodecConfigSbcSource::updateEncoderUserConfig(
               __func__, name().c_str());
     return false;
   }
+
+  LOG_ERROR(LOG_TAG, "%s: name=%s", __func__, name().c_str());
 
   a2dp_sbc_encoder_update(a2dp_sbc_encoder_cb.peer_mtu, this, p_restart_input,
                           p_restart_output, p_config_updated);

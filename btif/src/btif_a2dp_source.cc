@@ -571,6 +571,7 @@ static void btif_a2dp_source_setup_codec_delayed(
 
   tA2DP_ENCODER_INIT_PEER_PARAMS peer_params;
   bta_av_co_get_peer_params(peer_address, &peer_params);
+  peer_params.peer_address = peer_address; 
 
   if (!bta_av_co_set_active_peer(peer_address)) {
     LOG_ERROR(LOG_TAG, "%s: Cannot stream audio: cannot set active peer to %s",

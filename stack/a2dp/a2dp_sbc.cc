@@ -57,15 +57,9 @@ typedef struct {
 
 /* SBC Source codec capabilities */
 static const tA2DP_SBC_CIE a2dp_sbc_source_caps = {
-<<<<<<< HEAD
     (A2DP_SBC_IE_SAMP_FREQ_48 | A2DP_SBC_IE_SAMP_FREQ_44), /* samp_freq */
     (A2DP_SBC_IE_CH_MD_MONO | A2DP_SBC_IE_CH_MD_JOINT |
      A2DP_SBC_IE_CH_MD_DUAL | A2DP_SBC_IE_CH_MD_STEREO), /* ch_mode */
-=======
-    (A2DP_SBC_IE_SAMP_FREQ_44),        /* samp_freq */
-    (A2DP_SBC_IE_CH_MD_MONO | A2DP_SBC_IE_CH_MD_JOINT |
-     A2DP_SBC_IE_CH_MD_DUAL),          /* ch_mode */
->>>>>>> los/lineage-18.1
     (A2DP_SBC_IE_BLOCKS_16 | A2DP_SBC_IE_BLOCKS_12 | A2DP_SBC_IE_BLOCKS_8 |
      A2DP_SBC_IE_BLOCKS_4),            /* block_len */
     A2DP_SBC_IE_SUBBAND_8,             /* num_subbands */
@@ -897,11 +891,10 @@ UNUSED_ATTR static void build_codec_config(const tA2DP_SBC_CIE& config_cie,
   if (config_cie.ch_mode & A2DP_SBC_IE_CH_MD_MONO)
     result->channel_mode |= BTAV_A2DP_CODEC_CHANNEL_MODE_MONO;
 
-  if (config_cie.ch_mode & (A2DP_SBC_IE_CH_MD_STEREO | A2DP_SBC_IE_CH_MD_JOINT))
+  if (config_cie.ch_mode & (A2DP_SBC_IE_CH_MD_STEREO | A2DP_SBC_IE_CH_MD_JOINT |
+                            A2DP_SBC_IE_CH_MD_DUAL)) {
     result->channel_mode |= BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
-
-  if (config_cie.ch_mode & A2DP_SBC_IE_CH_MD_DUAL)
-    result->channel_mode |= BTAV_A2DP_CODEC_CHANNEL_MODE_DUAL_CHANNEL;
+  }
 }
 
 A2dpCodecConfigSbcSource::A2dpCodecConfigSbcSource(
@@ -927,8 +920,7 @@ A2dpCodecConfigSbcSource::A2dpCodecConfigSbcSource(
     codec_local_capability_.channel_mode |= BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
   }
   if (a2dp_sbc_source_caps.ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
-    codec_local_capability_.channel_mode |=
-        BTAV_A2DP_CODEC_CHANNEL_MODE_DUAL_CHANNEL;
+    codec_local_capability_.channel_mode |= BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
   }
 }
 
@@ -1066,12 +1058,8 @@ static bool select_best_channel_mode(uint8_t ch_mode, tA2DP_SBC_CIE* p_result,
   }
   if (ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
     p_result->ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
-<<<<<<< HEAD
     p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
     LOG_ERROR(LOG_TAG, "%s: select_best_channel_mode - DUAL", __func__);
-=======
-    p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_DUAL_CHANNEL;
->>>>>>> los/lineage-18.1
     return true;
   }
   if (ch_mode & A2DP_SBC_IE_CH_MD_MONO) {
@@ -1119,12 +1107,9 @@ static bool select_audio_channel_mode(
         p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
         return true;
       }
-      break;
-    case BTAV_A2DP_CODEC_CHANNEL_MODE_DUAL_CHANNEL:
       if (ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
         p_result->ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
-        p_codec_config->channel_mode =
-            BTAV_A2DP_CODEC_CHANNEL_MODE_DUAL_CHANNEL;
+        p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
         return true;
       }
       break;
@@ -1174,7 +1159,6 @@ bool A2dpCodecConfigSbcBase::setCodecConfig(const uint8_t* p_peer_codec_info,
   }
   // Try using the prefered peer codec config (if valid), instead of the peer
   // capability.
-<<<<<<< HEAD
   if (is_capability && !osi_property_get_int32("persist.bluetooth.sbc_hd", 0) ) {
     LOG_ERROR(LOG_TAG, "%s: A2DP is_capability=true", __func__);
     if (is_source_) {
@@ -1187,11 +1171,6 @@ bool A2dpCodecConfigSbcBase::setCodecConfig(const uint8_t* p_peer_codec_info,
         status =
             A2DP_ParseInfoSbc(&peer_info_cie, ota_codec_peer_config_, false);
       }
-=======
-  if (is_capability && !is_source_) {
-    if (A2DP_IsPeerSourceCodecValidSbc(ota_codec_peer_config_)) {
-      status = A2DP_ParseInfoSbc(&peer_info_cie, ota_codec_peer_config_, false);
->>>>>>> los/lineage-18.1
     }
     if (status != A2DP_SUCCESS) {
       // Use the peer codec capability
@@ -1388,35 +1367,6 @@ bool A2dpCodecConfigSbcBase::setCodecConfig(const uint8_t* p_peer_codec_info,
           codec_config_.channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_NONE;
           break;
       }
-<<<<<<< HEAD
-=======
-      break;
-    case BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO:
-      if (ch_mode & A2DP_SBC_IE_CH_MD_JOINT) {
-        result_config_cie.ch_mode = A2DP_SBC_IE_CH_MD_JOINT;
-        codec_capability_.channel_mode = codec_user_config_.channel_mode;
-        codec_config_.channel_mode = codec_user_config_.channel_mode;
-        break;
-      }
-      if (ch_mode & A2DP_SBC_IE_CH_MD_STEREO) {
-        result_config_cie.ch_mode = A2DP_SBC_IE_CH_MD_STEREO;
-        codec_capability_.channel_mode = codec_user_config_.channel_mode;
-        codec_config_.channel_mode = codec_user_config_.channel_mode;
-        break;
-      }
-      break;
-    case BTAV_A2DP_CODEC_CHANNEL_MODE_DUAL_CHANNEL:
-      if (ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
-        result_config_cie.ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
-        codec_capability_.channel_mode = codec_user_config_.channel_mode;
-        codec_config_.channel_mode = codec_user_config_.channel_mode;
-      }
-      break;
-    case BTAV_A2DP_CODEC_CHANNEL_MODE_NONE:
-      codec_capability_.channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_NONE;
-      codec_config_.channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_NONE;
-      break;
->>>>>>> los/lineage-18.1
   }
 
   // Select the channel mode if there is no user preference
@@ -1436,7 +1386,7 @@ bool A2dpCodecConfigSbcBase::setCodecConfig(const uint8_t* p_peer_codec_info,
     }
     if (ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
       codec_selectable_capability_.channel_mode |=
-          BTAV_A2DP_CODEC_CHANNEL_MODE_DUAL_CHANNEL;
+          BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
     }
 
     if (codec_config_.channel_mode != BTAV_A2DP_CODEC_CHANNEL_MODE_NONE) break;
@@ -1444,11 +1394,10 @@ bool A2dpCodecConfigSbcBase::setCodecConfig(const uint8_t* p_peer_codec_info,
     // Compute the common capability
     if (ch_mode & A2DP_SBC_IE_CH_MD_MONO)
       codec_capability_.channel_mode |= BTAV_A2DP_CODEC_CHANNEL_MODE_MONO;
-    if (ch_mode & (A2DP_SBC_IE_CH_MD_JOINT | A2DP_SBC_IE_CH_MD_STEREO)) {
+    if (ch_mode & (A2DP_SBC_IE_CH_MD_JOINT | A2DP_SBC_IE_CH_MD_STEREO |
+                   A2DP_SBC_IE_CH_MD_DUAL)) {
       codec_capability_.channel_mode |= BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
     }
-    if (ch_mode & A2DP_SBC_IE_CH_MD_DUAL)
-      codec_capability_.channel_mode |= BTAV_A2DP_CODEC_CHANNEL_MODE_DUAL_CHANNEL;
 
     if( !osi_property_get_int32("persist.bluetooth.sbc_hd", 0) ) {
     // No user preference - use the codec audio config
@@ -1661,7 +1610,7 @@ bool A2dpCodecConfigSbcBase::setPeerCodecCapabilities(
   }
   if (ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
     codec_selectable_capability_.channel_mode |=
-        BTAV_A2DP_CODEC_CHANNEL_MODE_DUAL_CHANNEL;
+        BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
   }
 
   status = A2DP_BuildInfoSbc(AVDT_MEDIA_TYPE_AUDIO, &peer_info_cie,

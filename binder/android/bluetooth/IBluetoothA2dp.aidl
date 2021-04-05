@@ -53,4 +53,7 @@ interface IBluetoothA2dp {
     int getOptionalCodecsEnabled(in BluetoothDevice device);
     oneway void setOptionalCodecsEnabled(in BluetoothDevice device, int value);
     int getPriority(in BluetoothDevice device);
+    int getSbcBitrate(in BluetoothDevice device);
+    oneway void setSbcBitrate(in BluetoothDevice device, int value);
+
 }

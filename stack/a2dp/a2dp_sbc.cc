@@ -95,29 +95,6 @@ const tA2DP_SBC_CIE a2dp_sbc_default_config = {
     BTAV_A2DP_CODEC_BITS_PER_SAMPLE_16 /* bits_per_sample */
 };
 
-const tA2DP_SBC_CIE a2dp_sbc_48_default_config = {
-    A2DP_SBC_IE_SAMP_FREQ_48,          /* samp_freq */
-    A2DP_SBC_IE_CH_MD_JOINT,           /* ch_mode */
-    A2DP_SBC_IE_BLOCKS_16,             /* block_len */
-    A2DP_SBC_IE_SUBBAND_8,             /* num_subbands */
-    A2DP_SBC_IE_ALLOC_MD_L,            /* alloc_method */
-    A2DP_SBC_IE_MIN_BITPOOL,           /* min_bitpool */
-    A2DP_SBC_MAX_BITPOOL,              /* max_bitpool */
-    BTAV_A2DP_CODEC_BITS_PER_SAMPLE_16 /* bits_per_sample */
-};
-
-
-const tA2DP_SBC_CIE a2dp_sbc_dc_default_config = {
-    A2DP_SBC_IE_SAMP_FREQ_44,          /* samp_freq */
-    A2DP_SBC_IE_CH_MD_DUAL,            /* ch_mode */
-    A2DP_SBC_IE_BLOCKS_16,             /* block_len */
-    A2DP_SBC_IE_SUBBAND_8,             /* num_subbands */
-    A2DP_SBC_IE_ALLOC_MD_L,            /* alloc_method */
-    A2DP_SBC_IE_MIN_BITPOOL,           /* min_bitpool */
-    A2DP_SBC_MAX_BITPOOL,              /* max_bitpool */
-    BTAV_A2DP_CODEC_BITS_PER_SAMPLE_16 /* bits_per_sample */
-};
-
 static const tA2DP_ENCODER_INTERFACE a2dp_encoder_interface_sbc = {
     a2dp_sbc_encoder_init,
     a2dp_sbc_encoder_cleanup,
@@ -1036,14 +1013,6 @@ static bool select_audio_bits_per_sample(
 static bool select_best_channel_mode(uint8_t ch_mode, tA2DP_SBC_CIE* p_result,
                                      btav_a2dp_codec_config_t* p_codec_config) {
 
-  if (osi_property_get_int32("persist.bluetooth.sbc_hd", 0) && 
-        ch_mode & A2DP_SBC_IE_CH_MD_DUAL) {
-    p_result->ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
-    p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
-    LOG_ERROR(LOG_TAG, "%s: select_best_channel_mode - DUAL", __func__);
-    return true;
-  }
-
   if (ch_mode & A2DP_SBC_IE_CH_MD_JOINT) {
     p_result->ch_mode = A2DP_SBC_IE_CH_MD_JOINT;
     p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
@@ -1091,12 +1060,6 @@ static bool select_audio_channel_mode(
       }
       break;
     case BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO:
-      if (osi_property_get_int32("persist.bluetooth.sbc_hd", 0) && 
-            (ch_mode & A2DP_SBC_IE_CH_MD_DUAL)) {
-        p_result->ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
-        p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
-        return true;
-      }
       if (ch_mode & A2DP_SBC_IE_CH_MD_JOINT) {
         p_result->ch_mode = A2DP_SBC_IE_CH_MD_JOINT;
         p_codec_config->channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
@@ -1159,7 +1122,7 @@ bool A2dpCodecConfigSbcBase::setCodecConfig(const uint8_t* p_peer_codec_info,
   }
   // Try using the prefered peer codec config (if valid), instead of the peer
   // capability.
-  if (is_capability && !osi_property_get_int32("persist.bluetooth.sbc_hd", 0) ) {
+  if (is_capability) {
     LOG_ERROR(LOG_TAG, "%s: A2DP is_capability=true", __func__);
     if (is_source_) {
       if (A2DP_IsPeerSinkCodecValidSbc(ota_codec_peer_config_)) {
@@ -1237,23 +1200,13 @@ bool A2dpCodecConfigSbcBase::setCodecConfig(const uint8_t* p_peer_codec_info,
     if (samp_freq & A2DP_SBC_IE_SAMP_FREQ_48)
       codec_capability_.sample_rate |= BTAV_A2DP_CODEC_SAMPLE_RATE_48000;
 
-    if( !osi_property_get_int32("persist.bluetooth.sbc_48", 0) && !osi_property_get_int32("persist.bluetooth.sbc_hd", 0) ) {
-        // No user preference - try the codec audio config
-        if (select_audio_sample_rate(&codec_audio_config_, samp_freq,
-                                 &result_config_cie, &codec_config_)) {
-          break;
-        }
+    // No user preference - try the codec audio config
+    if (select_audio_sample_rate(&codec_audio_config_, samp_freq,
+                             &result_config_cie, &codec_config_)) {
+      break;
     }
 
     // No user preference - try the default config
-    if( osi_property_get_int32("persist.bluetooth.sbc_48", 0) ) {
-        if (select_best_sample_rate(
-            a2dp_sbc_48_default_config.samp_freq & peer_info_cie.samp_freq,
-            &result_config_cie, &codec_config_)) {
-          break;
-        }
-    } 
-
     if (select_best_sample_rate(
         a2dp_sbc_default_config.samp_freq & peer_info_cie.samp_freq,
         &result_config_cie, &codec_config_)) {
@@ -1333,7 +1286,32 @@ bool A2dpCodecConfigSbcBase::setCodecConfig(const uint8_t* p_peer_codec_info,
   //
   ch_mode = p_a2dp_sbc_caps->ch_mode & peer_info_cie.ch_mode;
   codec_config_.channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_NONE;
-  if( !osi_property_get_int32("persist.bluetooth.sbc_hd", 0) ) {
+
+  if( codec_user_config_.codec_specific_1 > 0 ) {
+    LOG_DEBUG(LOG_TAG,
+       "%s: FORCED DUAL CHANNEL capability", __func__);
+  } else {
+    LOG_DEBUG(LOG_TAG,
+       "%s: FORCED DUAL CHANNEL disabled", __func__);
+  }
+
+
+  if( codec_user_config_.codec_specific_1 > 0  && (peer_info_cie.ch_mode & A2DP_SBC_IE_CH_MD_DUAL) ) {
+        result_config_cie.ch_mode = A2DP_SBC_IE_CH_MD_DUAL;
+        codec_capability_.channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
+        codec_config_.channel_mode = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
+
+      LOG_DEBUG(LOG_TAG,
+              "%s: FORCED DUAL CHANNEL channel_mode: source caps = 0x%x "
+              "sink info = 0x%x "
+              "ch_mode = 0x%x",
+              __func__, p_a2dp_sbc_caps->ch_mode, peer_info_cie.ch_mode, ch_mode);
+
+  } else {
+
+      ch_mode &=~A2DP_SBC_IE_CH_MD_DUAL;
+
+
       switch (codec_user_config_.channel_mode) {
         case BTAV_A2DP_CODEC_CHANNEL_MODE_MONO:
           if (ch_mode & A2DP_SBC_IE_CH_MD_MONO) {
@@ -1399,27 +1377,17 @@ bool A2dpCodecConfigSbcBase::setCodecConfig(const uint8_t* p_peer_codec_info,
       codec_capability_.channel_mode |= BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO;
     }
 
-    if( !osi_property_get_int32("persist.bluetooth.sbc_hd", 0) ) {
     // No user preference - use the codec audio config
-       if (select_audio_channel_mode(&codec_audio_config_, ch_mode,
-                                      &result_config_cie, &codec_config_)) {
-          break;
-        }
+    if (select_audio_channel_mode(&codec_audio_config_, ch_mode,
+                                  &result_config_cie, &codec_config_)) {
+      break;
     }
 
     // No user preference - try the default config
-    if( osi_property_get_int32("persist.bluetooth.sbc_hd", 0) ) {
-        if (select_best_channel_mode(
-                a2dp_sbc_dc_default_config.ch_mode & peer_info_cie.ch_mode,
-                &result_config_cie, &codec_config_)) {
-          break;
-        }
-    } else {
-        if (select_best_channel_mode(
-                a2dp_sbc_default_config.ch_mode & peer_info_cie.ch_mode,
-                &result_config_cie, &codec_config_)) {
-          break;
-        }
+    if (select_best_channel_mode(
+            a2dp_sbc_default_config.ch_mode & peer_info_cie.ch_mode,
+            &result_config_cie, &codec_config_)) {
+      break;
     }
 
     // No user preference - use the best match
